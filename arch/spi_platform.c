@@ -107,7 +107,7 @@ void spi_platform_init(void)
 	SPI_Cmd(SPI1, ENABLE);
 
 	/* Configure PA12 pin as input for INTR_N */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
@@ -120,7 +120,7 @@ void spi_platform_intr_init(void)
 	/*
 	 * Set module interrupt line to cause ext interrupt on falling edge.
 	 */
-	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource12);
+	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource3);
 
 	exti_init.EXTI_Line = INTR_N_EXT_LINE;
 	exti_init.EXTI_Mode = EXTI_Mode_Interrupt;

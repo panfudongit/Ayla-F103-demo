@@ -48,8 +48,8 @@ void mcu_io_init(void)
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 	//darren added end for 485 port operation	
 	
-	/* Configure PA3 pin as input for READY_N */
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+	/* Configure PA12 pin as input for READY_N */
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 

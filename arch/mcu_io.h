@@ -49,7 +49,7 @@
 #define BUTTON1_PIN	0
 
 #define READY_N_GPIO	GPIOA
-#define READY_N_PIN		   3
+#define READY_N_PIN		   12
 
 #define RESET_N_GPIO	GPIOA
 #define RESET_N_PIN			2

@@ -30,11 +30,11 @@
 #define __AYLA_SPI_PLATFORM_ARCH_H__
 
 #define INTR_N_GPIO	GPIOA
-#define	INTR_N_PIN	12
+#define	INTR_N_PIN	3
 #define INTR_N_EXT_LINE	EXTI_Line11
 #define INTR_N_IRQ	EXTI15_10_IRQn
 #define INTR_N_PORT_SOURCE GPIO_PortSourceGPIOA
-#define INTR_N_PIN_SOURCE GPIO_PinSource12
+#define INTR_N_PIN_SOURCE GPIO_PinSource3
 
 /*
 #define GP_SPI_GPIO	GPIOB
