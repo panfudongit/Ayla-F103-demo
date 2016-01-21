@@ -32,6 +32,8 @@
 #include <mcu_io.h>
 #include <stm32.h>
 
+#include <func.h>
+
 #ifdef DEMO_CONF
 #include <ayla/conf_token.h>
 #include <ayla/conf_access.h>
@@ -153,20 +155,71 @@ static int send_schedule(struct prop *prop, void *arg)
 }
 #endif
 
+static u8 send_from_host_ready = FALSE;
+static int cmdlist = 0;
+
+static s32 work_statu;
+static s32 heat_mode;
+static s32 menu_var;
+static s32 temp_ctrl;
+static s32 work_time;
+static s32 work_retime;
+static s32 fault_alert;
+static u8 child_lock;
+static s32 lighting_ctrl;
+static s32 device_power;
+static s32 realtime_temp;
+
+static void set_work_statu(struct prop *prop, void *arg, void *valp, size_t len);
+static void set_heat_mode(struct prop *prop, void *arg, void *valp, size_t len);
+static void set_menu_var(struct prop *prop, void *arg, void *valp, size_t len);
+static void set_temp_ctrl(struct prop *prop, void *arg, void *valp, size_t len);
+static void set_work_time(struct prop *prop, void *arg, void *valp, size_t len);
+static void set_work_retime(struct prop *prop, void *arg, void *valp, size_t len);
+static void set_fault_alert(struct prop *prop, void *arg, void *valp, size_t len);
+static void set_child_lock(struct prop *prop, void *arg, void *valp, size_t len);
+static void set_lighting_ctrl(struct prop *prop, void *arg, void *valp, size_t len);
+static void set_device_power(struct prop *prop, void *arg, void *valp, size_t len);
+static void set_realtime_temp(struct prop *prop, void *arg, void *valp, size_t len);
 
 struct prop prop_table[] = {
+#define DEMO_VERSION       0
+	{ "version",          ATLV_UTF8, NULL,               send_version,      NULL,           0,                 AFMT_READ_ONLY},
+#define WORK_STATU    1
+	{ "vw_work_statu",    ATLV_INT,  set_work_statu,     prop_send_generic, &work_statu,    sizeof(work_statu)},
+#define HEAT_MODE     2
+	{ "vw_heat_mode",     ATLV_INT,  set_heat_mode,      prop_send_generic, &heat_mode,     sizeof(heat_mode)},
+#define MENU_VAL      3
+	{ "vw_menu_var",      ATLV_INT,  set_menu_var,       prop_send_generic, &menu_var,      sizeof(menu_var)},
+#define TEMP_CTRL     4
+	{ "vw_temp_ctrl",     ATLV_INT,  set_temp_ctrl,      prop_send_generic, &temp_ctrl,     sizeof(temp_ctrl)},
+#define WORK_TIME     5
+	{ "vw_work_time",     ATLV_INT,  set_work_time,      prop_send_generic, &work_time,     sizeof(work_time)},
+#define WORK_RETIME   6
+	{ "vw_work_retime",   ATLV_INT,  set_work_retime,    prop_send_generic, &work_retime,   sizeof(work_retime)},
+#define FAULT_ALERT   7
+	{ "vw_fault_alert",   ATLV_INT,  set_fault_alert,    prop_send_generic, &fault_alert,   sizeof(fault_alert)},
+#define CHILD_LOCK    8
+	{ "vm_child_lock",    ATLV_BOOL, set_child_lock,     prop_send_generic, &child_lock,    sizeof(child_lock)},
+#define LINHTING_CTRL 9 
+	{ "vw_lighting_ctrl", ATLV_BOOL, set_lighting_ctrl,  prop_send_generic, &lighting_ctrl, sizeof(lighting_ctrl)},
+#define DEVICE_POWER  10
+	{ "vw_device_power",  ATLV_BOOL, set_device_power,   prop_send_generic, &device_power,  sizeof(device_power)},
+	#define REALTIME_TEMP 11
+	{ "vw_realtime_temp", ATLV_INT,  set_realtime_temp,  prop_send_generic, &realtime_temp, sizeof(realtime_temp)},
+	
 	{ "Blue_button", ATLV_BOOL, NULL, prop_send_generic,
 	    &blue_button, sizeof(blue_button), AFMT_READ_ONLY},
-#define PROP_BUTTON 0
+#define PROP_BUTTON 12
 	{ "output", ATLV_INT, NULL, prop_send_generic, &output,
 	    sizeof(output), AFMT_READ_ONLY},
-#define PROP_OUTPUT 1
+#define PROP_OUTPUT 13
 	{ "log", ATLV_UTF8, NULL, prop_send_generic, &cmd_buf[0],
 	    0, AFMT_READ_ONLY},
-#define PROP_LOG 2
+#define PROP_LOG 14
 	{ "decimal_out", ATLV_CENTS, NULL, prop_send_generic, &decimal_out,
 	    sizeof(decimal_out), AFMT_READ_ONLY},
-#define PROP_DEC_OUT 3
+#define PROP_DEC_OUT 15
 	{ "decimal_in", ATLV_CENTS, set_dec_in, prop_send_generic,
 	    &decimal_in, sizeof(decimal_in)},
 	{ "Blue_LED", ATLV_BOOL, set_led, send_led,
@@ -177,12 +230,12 @@ struct prop prop_table[] = {
 	{ "schedule_in", ATLV_SCHED, set_schedule_in, NULL, &schedule_in},
 	{ "schedule_out", ATLV_SCHED, NULL, send_schedule, NULL, 0,
 	  AFMT_READ_ONLY},
-#define PROP_SCHED_OUT 8
+#define PROP_SCHED_OUT 20
 #endif
 	{ "cmd", ATLV_UTF8, set_cmd, prop_send_generic, &cmd_buf[0]},
 	{ "input", ATLV_INT, set_input, prop_send_generic,
 	    &input, sizeof(input)},
-	{ "version", ATLV_UTF8, NULL, send_version, NULL, 0, AFMT_READ_ONLY},
+
 #ifdef DEMO_IMG_MGMT
 	{ "inactive_version", ATLV_UTF8, NULL, send_inactive_version, NULL,
 	  0, AFMT_READ_ONLY },
@@ -208,6 +261,218 @@ struct prop prop_table[] = {
 	{ NULL }
 };
 u8 prop_count = (sizeof(prop_table) / sizeof(prop_table[0])) - 1;
+
+u8 send_property_from_host( void )
+{
+	if(cmdlist > 0)
+	{
+		prop_send(&prop_table[cmdlist], 	prop_table[cmdlist].arg,	prop_table[cmdlist].val_len,	NULL);
+		cmdlist = 0;
+		Mcu_Response_Host();
+		return TRUE;
+	}	
+	return FALSE;
+}
+
+void Set_Network_Configura_Mode(u8 *infodata, int len)
+{
+		if(len < 0)
+				return;
+		
+		USART1_send_char((char)infodata[0]);
+		if(infodata[0] == 0x01 || infodata[0] == 0x02) // Wifi mode of AP(enter configure mode
+		{
+				conf_wifi_start_ap();
+				return;
+		}
+		if(infodata[0] == 0x00) // esc confgiure mode
+		{
+			  stm32_reset_module(); //reset module
+				return;
+		}
+}
+
+void Host_Response_result(u8 *infodata, int len)
+{
+		if(len == 0)
+			return;
+			
+		if(infodata[0] == 0)//  ctrl fail
+			return;
+
+		prop_table[infodata[2]].send_mask = valid_dest_mask;
+		
+}
+
+void Host_Prop_Sync_Service(u8 *infodata, int len)
+{
+			u8 *data = infodata;
+			u32 tmp;
+	
+			if(len == 0)
+				return;
+	
+			if(prop_table[data[0]].type == ATLV_INT)
+			{
+					cmdlist = data[0];
+					t16tot32_3B(tmp, data[1], data[2], data[3]);
+					*(s32 *)prop_table[cmdlist].arg = tmp; //send to the service data
+					prop_table[cmdlist].val_len = sizeof(s32);
+					send_from_host_ready = TRUE;  // host ready data up to the service
+					return;
+			}
+			
+			if(prop_table[data[0]].type == ATLV_BOOL)
+			{
+					cmdlist = data[0];
+					*(s32 *)(prop_table[data[0]].arg) = data[1];
+					prop_table[cmdlist].val_len = sizeof(u8);
+					send_from_host_ready = TRUE;
+					return;
+			}
+			
+			if(prop_table[data[0]].type == ATLV_UTF8)
+			{
+					return;
+			}
+			
+}
+
+static void set_work_statu(struct prop *prop, void *arg, void *valp, size_t len)
+{
+		int data = *(int *)valp;
+
+		if (len != sizeof(int) || data > 4) //data: 0, 1, 2, 3, 4
+		{
+				return;
+		}
+		
+		Send_4B_Ctrl_Packet(data, WORK_STATU, len);
+//		prop_table[WORK_STATU].send_mask = valid_dest_mask;
+}
+
+static void set_heat_mode(struct prop *prop, void *arg, void *valp, size_t len)
+{
+		int data = *(int *)valp;
+
+		if (len != sizeof(int) || data > 8) // data: 0, 1,.....8
+		{
+				return;
+		}
+
+		Send_4B_Ctrl_Packet(data, HEAT_MODE, len);
+//		prop_table[HEAT_MODE].send_mask = valid_dest_mask;
+}
+
+static void set_menu_var(struct prop *prop, void *arg, void *valp, size_t len)
+{
+		int data = *(int *)valp;
+
+		if (len != sizeof(int) || data > 28) // data 0, 1,.....28
+		{
+				return;
+		}
+
+		Send_4B_Ctrl_Packet(data, MENU_VAL, len);
+//		prop_table[MENU_VAL].send_mask = valid_dest_mask;
+}
+
+static void set_temp_ctrl(struct prop *prop, void *arg, void *valp, size_t len)
+{
+		int data = *(int *)valp;
+
+		if (len != sizeof(int) || data > 240 || data < 50) //data 50, 51,......240
+		{
+				return;
+		}
+
+		Send_4B_Ctrl_Packet(data, TEMP_CTRL, len);
+//		prop_table[TEMP_CTRL].send_mask = valid_dest_mask;
+}
+
+static void set_work_time(struct prop *prop, void *arg, void *valp, size_t len)
+{
+		int data = *(int *)valp;
+
+		if (len != sizeof(int) || data > 540) // data 0, 1,...... 540
+		{
+				return;
+		}
+
+		Send_4B_Ctrl_Packet(data, WORK_TIME, len);
+//		prop_table[WORK_TIME].send_mask = valid_dest_mask;
+}
+
+static void set_work_retime(struct prop *prop, void *arg, void *valp, size_t len)
+{
+		int data = *(int *)valp;
+
+		if (len != sizeof(int) || data > 540) // data 0, 1,..... 540
+		{
+				return;
+		}
+
+		Send_4B_Ctrl_Packet(data, WORK_RETIME, len);
+//		prop_table[WORK_RETIME].send_mask = valid_dest_mask;
+}
+
+static void set_fault_alert(struct prop *prop, void *arg, void *valp, size_t len)
+{
+//		prop_table[FAULT_ALERT].send_mask = valid_dest_mask;
+}
+
+static void set_child_lock(struct prop *prop, void *arg, void *valp, size_t len)
+{
+		u8 data = *(u8 *)valp;
+
+		if (len != sizeof(u8) || data > 1) // data: 0(on), 1(off)
+		{
+				return;
+		}
+
+		Send_4B_Ctrl_Packet(data, CHILD_LOCK , len);
+//		prop_table[CHILD_LOCK].send_mask = valid_dest_mask;
+}
+
+static void set_lighting_ctrl(struct prop *prop, void *arg, void *valp, size_t len)
+{
+		u8 data = *(u8 *)valp;
+
+		if (len != sizeof(u8) || data > 1) // data: 0(on), 1(off)
+		{
+				return;
+		}
+
+		Send_4B_Ctrl_Packet(data, LINHTING_CTRL, len);
+//		prop_table[LINHTING_CTRL].send_mask = valid_dest_mask;
+}
+
+static void set_device_power(struct prop *prop, void *arg, void *valp, size_t len)
+{
+		u8 data = *(u8 *)valp;
+
+		if (len != sizeof(u8) || data > 1) // data: 0(on), 1(off)
+		{
+				return;
+		}
+
+		Send_4B_Ctrl_Packet(data, DEVICE_POWER, len);
+//		prop_table[DEVICE_POWER].send_mask = valid_dest_mask;
+}
+
+static void set_realtime_temp(struct prop *prop, void *arg, void *valp, size_t len)
+{
+		int data = *(int *)valp;
+
+		if (len != sizeof(int) || data > 250) //data 0, 1,......250
+		{
+				return;
+		}
+
+		Send_4B_Ctrl_Packet(data, REALTIME_TEMP, len);
+//		prop_table[REALTIME_TEMP].send_mask = valid_dest_mask;
+}
+
 
 static void set_input(struct prop *prop, void *arg, void *valp, size_t len)
 {
@@ -277,7 +542,9 @@ void demo_set_button_state(u8 button_value)
 int main(int argc, char **argv)
 {
 	struct prop *prop;
-
+		
+	USART1_Init();
+	
 	feature_mask |= MCU_LAN_SUPPORT;
 #ifdef DEMO_IMG_MGMT
 	mcu_img_mgmt_init();
@@ -299,6 +566,29 @@ int main(int argc, char **argv)
 #ifdef DEMO_FILE_PROP
 	demo_stream_init();
 #endif /* DEMO_FILE_PROP */
+	delay_init();
+//	Keep_Live_Start();
+  printd("main start ....... enter fordd");
+					
+// 	if(devices_unread() == 0) //unread
+// 	{
+// 			check_device_ready();
+// 	}
+// 	
+//	Keep_Live_Start();
+// 	devices_info = ReadFlash(0);
+// 	u32tou8(dinfo, devices_info);
+//	printd(dinfo);
+// 	while(1)
+// 	{
+// 		if(wr == 1)
+// 		{
+// 			WirteFlash(0, 0x12345678);
+// 			wr = 0;
+// 		}
+// 		delay_ms(1000);
+// 		printd("a");
+// 	}
 	for (;;) {
 		if (stm32_ready()) {
 			if (factory_reset &&
@@ -340,6 +630,11 @@ int main(int argc, char **argv)
 			 * Insert logic here to handle the failure.
 			 */
 			prop->send_err = 0;
+		}
+		if( send_from_host_ready )
+		{
+			send_property_from_host();			
+			send_from_host_ready = FALSE;
 		}
 	}
 }
