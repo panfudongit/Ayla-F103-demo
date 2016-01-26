@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <func.h>
 
 #include <ayla/mcu_platform.h>
 #include <mcu_io.h>
@@ -76,6 +77,8 @@ static u8 conf_reg_token_req;		/* true if reg token requested */
 
 char conf_dsn[CONF_DEV_SN_MAX];
 char conf_model[CONF_DEV_MODEL_MAX];
+u32 time;
+u32 ctime;
 
 #ifdef AYLA_WIFI_DEMO
 static s8 conf_wifi_connected_profile;
@@ -157,6 +160,34 @@ static void conf_dsn_rx(void *buf, size_t len)
 	conf_dsn[tlv->len] = '\0';
 }
 
+/*
+ * Handle response for request service time.
+ */
+static void conf_time_rx(void *buf, size_t len)
+{
+	struct ayla_tlv *tlv;
+	u8 date[13];
+	char *crc = (char *)(date + 3);
+
+	tlv = tlv_get(ATLV_INT, buf, len);
+	if (!tlv) {
+		return;
+	}
+	if (tlv->len > sizeof(time)) {
+		return;
+	}
+
+	time = *((u32 *)(tlv + 1));
+	ctime = ((time << 24) & 0xff000000) | ((time << 8) & 0x00ff0000)|((time >> 8) & 0x0000ff00) |((time >> 24) & 0x000000ff);
+
+	date[0] = 0xfa;
+	date[1] = 0x0a;  //len
+	date[2] = (char)Crc8((uint8_t *)crc, 3); //crc8 value
+	date[3] = 0x0a;
+	utc_to_ctime(ctime, date);
+	USART1_send_buf((char *)date, 12);
+
+}
 /*
  * Handle response for request model
  */
@@ -670,6 +701,18 @@ void conf_poll(void)
 #ifdef AYLA_REG_TOKEN
 	conf_reg_poll();
 #endif
+}
+
+void conf_time_poll(void)
+{
+	const enum conf_token time_tokens[] = { CT_sys, CT_time };
+
+	if (conf_cb) {
+		return ;			/* a request is pending */
+	}
+	conf_read(time_tokens, 2, conf_time_rx);
+
+	return;
 }
 
 #ifdef AYLA_WIFI_DEMO

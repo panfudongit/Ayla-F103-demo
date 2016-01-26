@@ -156,6 +156,8 @@ static int send_schedule(struct prop *prop, void *arg)
 #endif
 
 static u8 send_from_host_ready = FALSE;
+static u8 host_request_ctime_ready = FALSE;
+
 static int cmdlist = 0;
 
 static s32 work_statu;
@@ -274,6 +276,13 @@ u8 send_property_from_host( void )
 	return FALSE;
 }
 
+u8 host_request_ctime_host( void )
+{
+	conf_time_poll();
+
+	return TRUE;
+}
+
 void Set_Network_Configura_Mode(u8 *infodata, int len)
 {
 		if(len < 0)
@@ -302,6 +311,11 @@ void Host_Response_result(u8 *infodata, int len)
 
 		prop_table[infodata[2]].send_mask = valid_dest_mask;
 		
+}
+
+void Host_Prop_Ctime(u8 *infodata, int len)
+{
+	host_request_ctime_ready = TRUE;
 }
 
 void Host_Prop_Sync_Service(u8 *infodata, int len)
@@ -635,6 +649,11 @@ int main(int argc, char **argv)
 		{
 			send_property_from_host();			
 			send_from_host_ready = FALSE;
+		}
+		if( host_request_ctime_ready )
+		{
+			host_request_ctime_host();
+			host_request_ctime_ready = FALSE;
 		}
 	}
 }

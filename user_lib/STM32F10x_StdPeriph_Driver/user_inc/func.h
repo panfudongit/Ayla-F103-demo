@@ -57,7 +57,9 @@ void Keep_Live_Off(void);
 void Mcu_Response_Host(void);
 void Host_Prop_Sync_Service(u8 *infodata, int len);
 void Host_Response_result(u8 *infodata, int len);
+void Host_Prop_Ctime(u8 *infodata, int len);
 void Send_4B_Ctrl_Packet(int data, int id, int len);
+void conf_time_poll(void);
 
 int Wifi_Leady_Link(void);
 #define LINK_N_GPIO	GPIOB
@@ -70,11 +72,10 @@ int Wifi_Leady_Link(void);
 void printd(char *p);
 #endif
 extern void printd(char *p);
-
+int utc_to_ctime(u32 sencond, u8 *argv);
 #define u8tou32(t, a, b, c, d) (t) = (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 #define u32tou8(t, a) { t[0] = ((a) >> 0); t[1] = ((a) >> 8); t[2] = ((a) >> 16); t[3] = ((a) >> 24); }
 	
 #define t16tot32_3B(i, a, b, c) (i) = (a + (256 * (b&0x0f)) + (4096 *(b >> 4)) + (65536 *(c&0x0f)))
-int utc_to_ctime(u32 sencond, u8 *argv);
 
 

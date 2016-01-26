@@ -201,7 +201,8 @@ void Receive_Host_Byte(u8 ch)
 		{
 				infohead[indexh] = ch;
 				indexh = indexh + 1;
-				return;
+				if(infolen != 0 || indexh != HEADLEN)
+					return;
 		}
 		
 		/* The message content */
@@ -244,8 +245,13 @@ void Receive_Host_Byte(u8 ch)
 						Clear_buf_off();
 						return;
 				}
+				if(infohead[3] == 0x0a) // type 0x0a
+				{
+						Host_Prop_Ctime(infodata, indexd);
+						Clear_buf_off();
+						return;
+				}
 		}
-			
 }
 
 /****************************************
