@@ -356,7 +356,7 @@ static void set_work_statu(struct prop *prop, void *arg, void *valp, size_t len)
 {
 		int data = *(int *)valp;
 
-		if (len != sizeof(int) || data > 4) //data: 0, 1, 2, 3, 4
+		if (len != sizeof(int) || data > 3) //data: 0, 1, 2, 3
 		{
 				return;
 		}
@@ -408,7 +408,7 @@ static void set_work_time(struct prop *prop, void *arg, void *valp, size_t len)
 {
 		int data = *(int *)valp;
 
-		if (len != sizeof(int) || data > 540) // data 0, 1,...... 540
+		if (len != sizeof(int) || data > 540 || data < 0) // data 0, 1,...... 540
 		{
 				return;
 		}
@@ -421,7 +421,7 @@ static void set_work_retime(struct prop *prop, void *arg, void *valp, size_t len
 {
 		int data = *(int *)valp;
 
-		if (len != sizeof(int) || data > 540) // data 0, 1,..... 540
+		if (len != sizeof(int) || data > 540 || data < 0) // data 0, 1,..... 540
 		{
 				return;
 		}
