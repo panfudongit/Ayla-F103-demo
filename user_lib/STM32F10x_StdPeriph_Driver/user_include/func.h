@@ -75,5 +75,6 @@ extern void printd(char *p);
 #define u32tou8(t, a) { t[0] = ((a) >> 0); t[1] = ((a) >> 8); t[2] = ((a) >> 16); t[3] = ((a) >> 24); }
 	
 #define t16tot32_3B(i, a, b, c) (i) = (a + (256 * (b&0x0f)) + (4096 *(b >> 4)) + (65536 *(c&0x0f)))
+int utc_to_ctime(u32 sencond, u8 *argv);
 
 
