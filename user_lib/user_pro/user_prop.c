@@ -59,32 +59,24 @@ int Wifi_Leady_Link(void)
 *****************************************/
 void Send_4B_Ctrl_Packet(int data, int id, int len)
 {
-		char pack[8];
+		char pack[11];
 		char *crc = (pack + 3);
 		
 		pack[0] = 0xfa;
-
+		pack[1] = 0x07;
 		pack[3] = 0x03;
+	
 		pack[4] = id;
-		if(data < 256) //data < 0xff
-		{			
-			pack[5] = data;
-			pack[1] = 4; // info len 6 - 2
-			pack[2] = (char)Crc8((uint8_t *)crc, 3); //crc8 value
-			USART1_send_buf(pack, 6);	
-			return;
-		}
-		if(data > 255 && data < 1000)
-		{
-				pack[6] = data & 0x000000ff;
-				pack[5] = (data >> 8) & 0x000000ff;
-				pack[1] = 5; // info len 7 - 2 
-				pack[2] = (char)Crc8((uint8_t *)crc, 4);  //crc8 value
-				USART1_send_buf(pack, 7);	
-				return;
-		}
+	
+		pack[5] = (data >> 24) & 0x000000ff;
+		pack[6] = (data >> 16) & 0x000000ff;
+		pack[7] = (data >>  8) & 0x000000ff;
+		pack[8] = (data >>  0) & 0x000000ff;
+		pack[2] = (char)Crc8((uint8_t *)crc, 6); //crc8 value
+	
+	USART1_send_buf(pack, 9);
 		
-
+	return ;
 }
 /****************************************
 * Name   : Host_Request_Info
