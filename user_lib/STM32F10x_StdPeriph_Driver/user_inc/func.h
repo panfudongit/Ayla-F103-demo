@@ -63,6 +63,8 @@ void Timeout_ReSend_4B_Ctrl_Packet(void);
 int TIM2_Is_Enable(void);
 void conf_time_poll(void);
 
+int send_service_data_poll(void);
+
 int Wifi_Leady_Link(void);
 #define LINK_N_GPIO	GPIOB
 #define LINK_N_PIN	1

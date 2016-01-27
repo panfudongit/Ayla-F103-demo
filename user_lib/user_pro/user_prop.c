@@ -57,6 +57,9 @@ int Wifi_Leady_Link(void)
 #define PACKLNE 9
 #define PACK_MAC_LNE 11
 static char timeoutpack[PACK_MAC_LNE];
+
+#define MAXID 12
+static char servicepack[MAXID][PACK_MAC_LNE];
 static int  resendcount = 0;
 /****************************************
 * FUNC   :  data send to the host
@@ -78,10 +81,7 @@ void Send_4B_Ctrl_Packet(int data, int id, int len)
 		pack[8] = (data >>  0) & 0x000000ff;
 		pack[2] = (char)Crc8((uint8_t *)crc, 6); //crc8 value
 	
-	memcpy(timeoutpack, pack, PACKLNE);
-	USART1_send_buf(pack, PACKLNE);
-	resendcount = 3;
-	TIM_Cmd(TIM2, ENABLE);
+	memcpy(servicepack[id], pack, PACKLNE);
 
 	return ;
 }
@@ -99,6 +99,43 @@ void Timeout_ReSend_4B_Ctrl_Packet(void)
 	resendcount = resendcount - 1;
 		
 	return ;
+}
+
+int servicepack_is_null(void)
+{
+		int i = 1;
+
+		for(i = 1; i < MAXID; i++)
+		{
+				if(servicepack[i][0] == (char)0xfa)
+					return 0;
+		}
+
+		return 1;
+}
+int send_service_data_poll(void)
+{
+		int i;
+
+		if(timeoutpack[0] == (char)0xfa)
+				return 0;
+		if(servicepack_is_null() == 1)
+				return 1;
+
+		for(i = 1; i < MAXID; i++)
+		{
+				if(servicepack[i][0] == (char)0xfa)
+				{
+						memcpy(timeoutpack, servicepack[i], PACKLNE);
+						servicepack[i][0] = 0x00;
+						USART1_send_buf(timeoutpack, PACKLNE);
+						resendcount = 3;
+						TIM_Cmd(TIM2, ENABLE);
+						break;
+				}
+		}
+
+		return 0;
 }
 /****************************************
 * Name   : Host_Request_Info
@@ -268,6 +305,7 @@ void Receive_Host_Byte(u8 ch)
 				if(infohead[3] == 0x02) // type 0x02
 				{
 						TIM_Cmd(TIM2, DISABLE);
+						timeoutpack[0] = 0x00;
 						Clear_buf_off();
 						return;
 				}

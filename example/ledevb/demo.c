@@ -157,6 +157,7 @@ static int send_schedule(struct prop *prop, void *arg)
 
 static u8 send_from_host_ready = FALSE;
 static u8 host_request_ctime_ready = FALSE;
+static u8 send_from_service_ready = FALSE;
 
 static int cmdlist = 0;
 
@@ -283,6 +284,11 @@ u8 host_request_ctime_host( void )
 	return TRUE;
 }
 
+int send_service_ready( void )
+{
+	return send_service_data_poll();
+}
+
 void Set_Network_Configura_Mode(u8 *infodata, int len)
 {
 		if(len < 0)
@@ -362,6 +368,7 @@ static void set_work_statu(struct prop *prop, void *arg, void *valp, size_t len)
 		}
 		
 		Send_4B_Ctrl_Packet(data, WORK_STATU, len);
+		send_from_service_ready = TRUE;
 //		prop_table[WORK_STATU].send_mask = valid_dest_mask;
 }
 
@@ -375,6 +382,7 @@ static void set_heat_mode(struct prop *prop, void *arg, void *valp, size_t len)
 		}
 
 		Send_4B_Ctrl_Packet(data, HEAT_MODE, len);
+		send_from_service_ready = TRUE;
 //		prop_table[HEAT_MODE].send_mask = valid_dest_mask;
 }
 
@@ -388,6 +396,7 @@ static void set_menu_var(struct prop *prop, void *arg, void *valp, size_t len)
 		}
 
 		Send_4B_Ctrl_Packet(data, MENU_VAL, len);
+		send_from_service_ready = TRUE;
 //		prop_table[MENU_VAL].send_mask = valid_dest_mask;
 }
 
@@ -401,6 +410,7 @@ static void set_temp_ctrl(struct prop *prop, void *arg, void *valp, size_t len)
 		}
 
 		Send_4B_Ctrl_Packet(data, TEMP_CTRL, len);
+		send_from_service_ready = TRUE;
 //		prop_table[TEMP_CTRL].send_mask = valid_dest_mask;
 }
 
@@ -414,6 +424,7 @@ static void set_work_time(struct prop *prop, void *arg, void *valp, size_t len)
 		}
 
 		Send_4B_Ctrl_Packet(data, WORK_TIME, len);
+		send_from_service_ready = TRUE;
 //		prop_table[WORK_TIME].send_mask = valid_dest_mask;
 }
 
@@ -427,6 +438,7 @@ static void set_work_retime(struct prop *prop, void *arg, void *valp, size_t len
 		}
 
 		Send_4B_Ctrl_Packet(data, WORK_RETIME, len);
+		send_from_service_ready = TRUE;
 //		prop_table[WORK_RETIME].send_mask = valid_dest_mask;
 }
 
@@ -445,6 +457,7 @@ static void set_child_lock(struct prop *prop, void *arg, void *valp, size_t len)
 		}
 
 		Send_4B_Ctrl_Packet(data, CHILD_LOCK , len);
+		send_from_service_ready = TRUE;
 //		prop_table[CHILD_LOCK].send_mask = valid_dest_mask;
 }
 
@@ -458,6 +471,7 @@ static void set_lighting_ctrl(struct prop *prop, void *arg, void *valp, size_t l
 		}
 
 		Send_4B_Ctrl_Packet(data, LINHTING_CTRL, len);
+		send_from_service_ready = TRUE;
 //		prop_table[LINHTING_CTRL].send_mask = valid_dest_mask;
 }
 
@@ -471,6 +485,7 @@ static void set_device_power(struct prop *prop, void *arg, void *valp, size_t le
 		}
 
 		Send_4B_Ctrl_Packet(data, DEVICE_POWER, len);
+		send_from_service_ready = TRUE;
 //		prop_table[DEVICE_POWER].send_mask = valid_dest_mask;
 }
 
@@ -484,6 +499,7 @@ static void set_realtime_temp(struct prop *prop, void *arg, void *valp, size_t l
 		}
 
 		Send_4B_Ctrl_Packet(data, REALTIME_TEMP, len);
+		send_from_service_ready = TRUE;
 //		prop_table[REALTIME_TEMP].send_mask = valid_dest_mask;
 }
 
@@ -655,6 +671,11 @@ int main(int argc, char **argv)
 		{
 			host_request_ctime_host();
 			host_request_ctime_ready = FALSE;
+		}
+		if( send_from_service_ready )
+		{
+			if( send_service_ready() == 1)
+				send_from_service_ready = FALSE;
 		}
 	}
 }
