@@ -83,8 +83,8 @@ void TIM3_IRQHandler(void)
 
 #ifdef TIM2_ENABLE
 
-#define T2_Prescaler 36
-#define T2_Period 2000
+#define T2_Prescaler 36000
+#define T2_Period 2
 void RCC_Timer2(void)
 {	
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
@@ -103,10 +103,10 @@ void TIMER2_cfg(int ms)
 	
 	TIM_InternalClockConfig(TIM2);
 	
-	TIM_TimeBaseStructure.TIM_Prescaler = (T2_Prescaler * ms) - 1;
+	TIM_TimeBaseStructure.TIM_Prescaler = T2_Prescaler - 1;
 	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-	TIM_TimeBaseStructure.TIM_Period = T2_Period - 1;
+	TIM_TimeBaseStructure.TIM_Period = (T2_Period * ms) - 1;
 	
 	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
 	
@@ -129,13 +129,17 @@ void NVCC_Timer2_cfg(void)
 	NVIC_Init(&NVIC_InitStructure);
 }
 
+int TIM2_Is_Enable(void)
+{
+	return ( (TIM2->CR1) & 0x0001);
+}
 void TIM2_Init(int ms)
 {
 	RCC_Timer2();
 	TIMER2_cfg(ms);
 	NVCC_Timer2_cfg();	
 	
-	// 	TIM_Cmd(TIM2, ENABLE);
+// 	TIM_Cmd(TIM2, ENABLE);
 }
 
 void TIM2_IRQHandler(void)
@@ -143,7 +147,7 @@ void TIM2_IRQHandler(void)
 	if(TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET)
 	{
 		TIM_ClearITPendingBit(TIM2, TIM_FLAG_Update);
-		USART1_send_char('b');
+		Timeout_ReSend_4B_Ctrl_Packet();
 	}
 }
 

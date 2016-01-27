@@ -582,6 +582,7 @@ int main(int argc, char **argv)
 #endif /* DEMO_FILE_PROP */
 	delay_init();
 //	Keep_Live_Start();
+	TIM2_Init(210);  //200ms
   printd("main start ....... enter fordd");
 					
 // 	if(devices_unread() == 0) //unread

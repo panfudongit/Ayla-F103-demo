@@ -54,12 +54,16 @@ int Wifi_Leady_Link(void)
 	return (LINK_N_GPIO->IDR & bit(LINK_N_PIN)) == 0;
 }
 
+#define PACKLNE 9
+#define PACK_MAC_LNE 11
+static char timeoutpack[PACK_MAC_LNE];
+static int  resendcount = 0;
 /****************************************
 * FUNC   :  data send to the host
 *****************************************/
 void Send_4B_Ctrl_Packet(int data, int id, int len)
 {
-		char pack[11];
+		char pack[PACK_MAC_LNE];
 		char *crc = (pack + 3);
 		
 		pack[0] = 0xfa;
@@ -74,7 +78,25 @@ void Send_4B_Ctrl_Packet(int data, int id, int len)
 		pack[8] = (data >>  0) & 0x000000ff;
 		pack[2] = (char)Crc8((uint8_t *)crc, 6); //crc8 value
 	
-	USART1_send_buf(pack, 9);
+	memcpy(timeoutpack, pack, PACKLNE);
+	USART1_send_buf(pack, PACKLNE);
+	resendcount = 3;
+	TIM_Cmd(TIM2, ENABLE);
+
+	return ;
+}
+
+void Timeout_ReSend_4B_Ctrl_Packet(void)
+{
+	if( resendcount == 0 || timeoutpack[0] == 0x00)
+	{
+		TIM_Cmd(TIM2, DISABLE);
+		timeoutpack[0] = 0x00;
+		return;
+	}
+
+	USART1_send_buf(timeoutpack, PACKLNE);
+	resendcount = resendcount - 1;
 		
 	return ;
 }
@@ -240,6 +262,12 @@ void Receive_Host_Byte(u8 ch)
 				if(infohead[3] == 0x0a) // type 0x0a
 				{
 						Host_Prop_Ctime(infodata, indexd);
+						Clear_buf_off();
+						return;
+				}
+				if(infohead[3] == 0x02) // type 0x02
+				{
+						TIM_Cmd(TIM2, DISABLE);
 						Clear_buf_off();
 						return;
 				}

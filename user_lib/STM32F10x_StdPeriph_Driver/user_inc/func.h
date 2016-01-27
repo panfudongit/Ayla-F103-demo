@@ -59,6 +59,8 @@ void Host_Prop_Sync_Service(u8 *infodata, int len);
 void Host_Response_result(u8 *infodata, int len);
 void Host_Prop_Ctime(u8 *infodata, int len);
 void Send_4B_Ctrl_Packet(int data, int id, int len);
+void Timeout_ReSend_4B_Ctrl_Packet(void);
+int TIM2_Is_Enable(void);
 void conf_time_poll(void);
 
 int Wifi_Leady_Link(void);
