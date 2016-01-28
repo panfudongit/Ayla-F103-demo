@@ -315,7 +315,7 @@ void Host_Response_result(u8 *infodata, int len)
 		if(infodata[0] == 0)//  ctrl fail
 			return;
 
-		prop_table[infodata[2]].send_mask = valid_dest_mask;
+//		prop_table[infodata[2]].send_mask = valid_dest_mask;
 		
 }
 

@@ -79,7 +79,7 @@ void Send_4B_Ctrl_Packet(int data, int id, int len)
 		pack[6] = (data >> 16) & 0x000000ff;
 		pack[7] = (data >>  8) & 0x000000ff;
 		pack[8] = (data >>  0) & 0x000000ff;
-		pack[2] = (char)Crc8((uint8_t *)crc, 6); //crc8 value
+		pack[2] = (char)Crc8((uint8_t *)crc, pack[1] - 1); //crc8 value
 	
 	memcpy(servicepack[id], pack, PACKLNE);
 
