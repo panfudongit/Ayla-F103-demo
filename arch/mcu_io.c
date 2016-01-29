@@ -38,7 +38,7 @@ void mcu_io_init(void)
 
 	/* Enable GPIOA, GPIOB, and GPIOC clocks */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
-  //RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	//RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
 
 	//below code is added by darren to control 485 port
@@ -52,6 +52,11 @@ void mcu_io_init(void)
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	/* Configure PB1 pin as input for SERVICE_LINK */
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
 #ifndef AYLA_UART /* UART mode on module uses PA0/WKUP as UART_CTS input */
 	/* Configure PB2 pin as output for WAKEUP */

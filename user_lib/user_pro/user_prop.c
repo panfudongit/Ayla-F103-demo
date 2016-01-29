@@ -48,10 +48,12 @@ uint8_t Crc8(uint8_t *ptr, uint8_t len)
 		}
 		return (crc);
 }
-
-int Wifi_Leady_Link(void)
+/*****************
+*return  1:link, 0: not link:
+******************/
+int Wifi_Service_Link(void)
 {
-	/*PB2: LOW LINK,  HIGHT NOT LINK */
+	/*PB1: LOW LINK,  HIGHT NOT LINK */
 	return (LINK_N_GPIO->IDR & bit(LINK_N_PIN)) == 0;
 }
 
