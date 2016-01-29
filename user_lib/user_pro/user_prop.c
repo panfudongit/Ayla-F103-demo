@@ -13,6 +13,7 @@
 
 u8 infohead[HEADLEN];
 u8 infodata[DATALEN];
+u8 crcp[DATALEN + 1];
 static u8 indexh;
 static u8 indexd;
 static u8 infolen;
@@ -266,6 +267,14 @@ void Receive_Host_Byte(u8 ch)
 		/* The message content receive complete */
 		if(indexd == infolen)
 		{
+				crcp[0] = infohead[3];
+				if(indexd != 0)
+						memcpy(crcp + 1, infodata, indexd);
+
+				if((char)Crc8((uint8_t *)crcp, indexd + 1) != infohead[2])
+				{
+						return;
+				}
 				if(infohead[3] == 0x00) //type 0x00
 				{
 						rd = 0;  // host ready
