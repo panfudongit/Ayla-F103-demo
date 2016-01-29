@@ -75,10 +75,10 @@ void Send_4B_Ctrl_Packet(int data, int id, int len)
 	
 		pack[4] = id;
 	
-		pack[5] = (data >> 24) & 0x000000ff;
-		pack[6] = (data >> 16) & 0x000000ff;
-		pack[7] = (data >>  8) & 0x000000ff;
-		pack[8] = (data >>  0) & 0x000000ff;
+		pack[5] = (data >> 0) & 0x000000ff;
+		pack[6] = (data >> 8) & 0x000000ff;
+		pack[7] = (data >> 16) & 0x000000ff;
+		pack[8] = (data >> 24) & 0x000000ff;
 		pack[2] = (char)Crc8((uint8_t *)crc, pack[1] - 1); //crc8 value
 	
 	memcpy(servicepack[id], pack, PACKLNE);
@@ -281,7 +281,7 @@ void Receive_Host_Byte(u8 ch)
 				}
 				if(infohead[3] == 0x04) //type 0x04
 				{
-						Host_Prop_Sync_Service(infodata, indexd);
+						Host_Prop_Sync_Service(infodata, indexd, infohead);
 						Clear_buf_off();
 						return;
 				}

@@ -324,24 +324,32 @@ void Host_Prop_Ctime(u8 *infodata, int len)
 	host_request_ctime_ready = TRUE;
 }
 
-void Host_Prop_Sync_Service(u8 *infodata, int len)
+void Host_Prop_Sync_Service(u8 *infodata, int len, u8 *head)
 {
 			u8 *data = infodata;
+			u8 tmpd[135];
 			u32 tmp;
+			u8 crc;
 	
 			if(len == 0)
 				return;
-	
+			tmpd[0] = head[3];
+			memcpy(tmpd + 1, infodata, len);
+
+			crc = (char)Crc8((uint8_t *)tmpd, len + 1); //crc8 value
+			if(head[2] != crc)
+					return;
+
 			if(prop_table[data[0]].type == ATLV_INT)
 			{
 					cmdlist = data[0];
-					t16tot32_3B(tmp, data[1], data[2], data[3]);
+					t16tot32_3B(tmp, data[1], data[2], data[3]); //0xaabbccdd -> data[1]:0xdd, [2]0xcc, [3]0xbb 
 					*(s32 *)prop_table[cmdlist].arg = tmp; //send to the service data
 					prop_table[cmdlist].val_len = sizeof(s32);
 					send_from_host_ready = TRUE;  // host ready data up to the service
 					return;
 			}
-			
+
 			if(prop_table[data[0]].type == ATLV_BOOL)
 			{
 					cmdlist = data[0];
