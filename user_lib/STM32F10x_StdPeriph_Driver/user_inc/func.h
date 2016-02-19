@@ -62,6 +62,8 @@ void Send_4B_Ctrl_Packet(int data, int id, int len);
 void Timeout_ReSend_4B_Ctrl_Packet(void);
 int TIM2_Is_Enable(void);
 void conf_time_poll(void);
+u8 conf_wifi_mode_poll(void);
+u8 conf_wifi_rssi_poll(void);
 int Wifi_Service_Link(void);
 int send_service_data_poll(void);
 

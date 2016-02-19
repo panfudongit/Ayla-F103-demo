@@ -75,7 +75,7 @@ void TIM3_IRQHandler(void)
 	if(TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
 	{
 		TIM_ClearITPendingBit(TIM3, TIM_FLAG_Update);
-		USART1_send_char('a');
+		conf_wifi_mode_poll();
 	}
 }
 

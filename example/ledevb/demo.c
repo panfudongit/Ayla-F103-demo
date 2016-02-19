@@ -597,7 +597,7 @@ int main(int argc, char **argv)
 	demo_stream_init();
 #endif /* DEMO_FILE_PROP */
 	delay_init();
-//	Keep_Live_Start();
+	Keep_Live_Start();
 	TIM2_Init(210);  //200ms
   printd("main start ....... enter fordd");
 					

@@ -82,9 +82,11 @@ u32 ctime;
 
 #ifdef AYLA_WIFI_DEMO
 static s8 conf_wifi_connected_profile;
+static u32 conf_wifi_connected_rssi;
 char conf_wifi_ssid[CONF_WIFI_SSID_MAX];
 s8 conf_wifi_bars = -1;
 u8 conf_wifi_ap_mode;
+u8 conf_wifi_signal_level;
 #endif
 
 /* handler for OTA notification */
@@ -490,11 +492,68 @@ void conf_rx(void *buf, size_t len)
 
 #ifdef AYLA_WIFI_JOIN
 
+#define WIFI_STATU_LEN 7
+char wifi_statu[WIFI_STATU_LEN];
 
 /*
  * Handle response for request wifi profile
  */
 static void conf_wifi_profile_rx(void *buf, size_t len)
+{
+	struct ayla_tlv *tlv;
+	char statu = 0x0;
+
+	tlv = tlv_get(ATLV_INT, buf, len);
+	if (!tlv) {
+		return;
+	}
+	if (tlv->len > sizeof(conf_wifi_connected_profile)) {
+		return;
+	}
+
+	/* profile is always a 1-byte signed int */
+	conf_wifi_connected_profile = (*(s8*)(tlv + 1));
+
+	/* Profile 10 means we're in access point mode */
+	conf_wifi_ap_mode = (conf_wifi_connected_profile == 10);
+
+	if(Wifi_Service_Link() == 1)
+	{
+		statu = (statu | 0x1);
+	} else {
+		statu = (statu & ~(0x1));
+	}
+	if(conf_wifi_ap_mode == 1) //1: ap_mode,
+	{
+		statu = ( (statu | (0x1 << 1)) );  // config mode [1]:1
+		statu = ( (statu & ~(0x1 << 2)) ); // not associated AP [2]:0
+		statu = ( ((statu | (0x1 << 4))) & ~(0x1 << 3) );  // ap mode [3][4]: 01
+
+		wifi_statu[4] = statu;
+		wifi_statu[5] = 0x0;
+		wifi_statu[0] = 0xfa;
+		wifi_statu[1] = 0x05;
+		wifi_statu[3] = 0x01;
+		wifi_statu[2] = Crc8((uint8_t *)(wifi_statu + 3), WIFI_STATU_LEN - 3);
+
+		USART1_send_buf(wifi_statu, WIFI_STATU_LEN);
+	}
+
+	if(conf_wifi_ap_mode == 0) //0: sta_mode,
+	{
+		statu = ( (statu & ~(0x1 << 1)) );  // config mode [1]:0
+		statu = ( (statu | (0x1 << 2)) );   //  associated AP [2]:1
+		statu = ( ((statu & ~(0x1 << 4))) & ~(0x1 << 3) );   // sta mode [3][4]: 00
+		wifi_statu[4] = statu;
+		conf_wifi_rssi_poll();
+	}
+
+}
+
+/*
+ * Handle response for request wifi rssi
+ */
+static void conf_wifi_rssi_rx(void *buf, size_t len)
 {
 	struct ayla_tlv *tlv;
 
@@ -507,7 +566,27 @@ static void conf_wifi_profile_rx(void *buf, size_t len)
 	}
 
 	/* profile is always a 1-byte signed int */
-	conf_wifi_connected_profile = (*(s8*)(tlv + 1));
+	conf_wifi_connected_rssi = (*(u32*)(tlv + 1));
+	conf_wifi_connected_rssi = 0 - conf_wifi_connected_rssi;
+	conf_wifi_connected_rssi = 0x000000ff & conf_wifi_connected_rssi;
+	conf_wifi_signal_level = 0;
+
+	if(conf_wifi_connected_rssi > 0 && conf_wifi_connected_rssi < 45)
+	{
+		conf_wifi_signal_level = 3; // signal strength strong
+	} else if (conf_wifi_connected_rssi >= 45 && conf_wifi_connected_rssi < 66)
+	{
+		conf_wifi_signal_level = 2; // signal strength medium
+	} else if (conf_wifi_connected_rssi >= 66 && conf_wifi_connected_rssi < 88)
+	{
+		conf_wifi_signal_level = 1; // signal strength weak
+	}
+	wifi_statu[5] = conf_wifi_signal_level;
+	wifi_statu[0] = 0xfa;
+	wifi_statu[1] = 0x05;
+	wifi_statu[3] = 0x01;
+	wifi_statu[2] = Crc8((uint8_t *)(wifi_statu + 3), WIFI_STATU_LEN - 3);
+	USART1_send_buf(wifi_statu, WIFI_STATU_LEN);
 }
 
 /*
@@ -713,6 +792,34 @@ void conf_time_poll(void)
 	conf_read(time_tokens, 2, conf_time_rx);
 
 	return;
+}
+
+u8 conf_wifi_mode_poll(void)
+{
+	static enum conf_token wifi_profile_tokens[] = { CT_wifi, CT_status, CT_profile };
+
+	if (conf_cb) {
+		return 0;			/* a request is pending */
+	}
+
+	conf_read(wifi_profile_tokens, 3, conf_wifi_profile_rx);
+
+	return 0;
+}
+
+u8 conf_wifi_rssi_poll(void)
+{
+	static enum conf_token wifi_rssi_tokens[] = { CT_wifi, CT_status, CT_rssi };
+
+	conf_wifi_signal_level = 0; // not associated ap
+	if (conf_cb) {
+		return 0;			/* a request is pending */
+	}
+
+	// Signal strength in 1 to 3
+	conf_read(wifi_rssi_tokens, 3, conf_wifi_rssi_rx);
+
+	return 0;
 }
 
 #ifdef AYLA_WIFI_DEMO
